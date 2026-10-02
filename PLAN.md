@@ -14,7 +14,7 @@
 
 | Task | 內容 | 依賴 | Spec | 狀態 |
 |---|---|---|---|---|
-| T1 | Backend 骨架：FastAPI、config、structlog + redaction、DB 連線、`/health/live`、`/health/ready`、ruff/mypy/pytest、Dockerfile | — | [t1](team/specs/2026-10-03-t1-backend-skeleton.md) | spec |
+| T1 | Backend 骨架：FastAPI、config、structlog + redaction、DB 連線、`/health/live`、`/health/ready`、ruff/mypy/pytest、Dockerfile | — | [t1](team/specs/2026-10-03-t1-backend-skeleton.md) | done（review r1 退回 1 次，r2 通過）|
 | T2 | Frontend 骨架：Vite/React/TS strict、Tailwind、Router、TanStack Query、ESLint、Vitest、冷啟動 readiness 輪詢、Landing | — | [t2](team/specs/2026-10-03-t2-frontend-skeleton.md) | spec |
 | T3 | docker-compose、Makefile、`.env.example`、`.gitignore`、CI workflow、Dependabot、LICENSE、README 快速啟動 | T1, T2 | [t3](team/specs/2026-10-03-t3-compose-ci.md) | spec |
 
