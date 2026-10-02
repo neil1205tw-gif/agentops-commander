@@ -33,6 +33,13 @@ def _redact(event_dict: dict[str, Any]) -> dict[str, Any]:
         "client_secret",
         "access_token",
         "SUPABASE_SECRET_KEY",
+        "X-API-Key",
+        "x-api-key",
+        "X-Auth-Token",
+        "x-client-secret",
+        "Proxy-Authorization",
+        "proxy-authorization",
+        "SET-COOKIE",
     ],
 )
 def test_sensitive_keys_are_redacted(key: str) -> None:
@@ -52,8 +59,46 @@ def test_nested_sensitive_keys_are_redacted() -> None:
     }
 
 
+def test_nested_hyphenated_headers_are_redacted() -> None:
+    result = _redact(
+        {
+            "request": {
+                "headers": {
+                    "X-API-Key": "k1",
+                    "x-Auth-Token": "t1",
+                    "Proxy-Authorization": "Basic abc",
+                    "Set-Cookie": "sid=1",
+                    "x-request-id": "r1",
+                    "Content-Type": "application/json",
+                }
+            },
+            "items": [{"X-Client-Secret": "s1"}],
+        }
+    )
+    assert result == {
+        "request": {
+            "headers": {
+                "X-API-Key": REDACTED,
+                "x-Auth-Token": REDACTED,
+                "Proxy-Authorization": REDACTED,
+                "Set-Cookie": REDACTED,
+                "x-request-id": "r1",
+                "Content-Type": "application/json",
+            }
+        },
+        "items": [{"X-Client-Secret": REDACTED}],
+    }
+
+
 def test_regular_fields_are_untouched() -> None:
-    event = {"event": "hello", "user_id": 42, "keyboard": "k", "path": "/health/live"}
+    event = {
+        "event": "hello",
+        "user_id": 42,
+        "keyboard": "k",
+        "path": "/health/live",
+        "x-request-id": "r1",
+        "content-type": "application/json",
+    }
     assert _redact(event) == event
 
 

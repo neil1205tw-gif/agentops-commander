@@ -13,8 +13,9 @@ REDACTED = "[REDACTED]"
 _SENSITIVE_KEYS = frozenset(
     {
         "authorization",
+        "proxy_authorization",
         "cookie",
-        "set-cookie",
+        "set_cookie",
         "password",
         "secret",
         "token",
@@ -32,7 +33,7 @@ _DSN_PATTERN = re.compile(r"(postgres(?:ql)?(?:\+\w+)?://)[^/\s]*@", re.IGNORECA
 def _is_sensitive_key(key: object) -> bool:
     if not isinstance(key, str):
         return False
-    lowered = key.lower()
+    lowered = key.lower().replace("-", "_")
     return lowered in _SENSITIVE_KEYS or lowered.endswith(_SENSITIVE_SUFFIXES)
 
 
