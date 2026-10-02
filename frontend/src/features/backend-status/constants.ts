@@ -1,0 +1,3 @@
+export const RETRY_INTERVAL_MS = 5_000
+export const REQUEST_TIMEOUT_MS = 10_000
+export const UNAVAILABLE_AFTER_MS = 180_000
