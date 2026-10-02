@@ -1,0 +1,1 @@
+The hyphen-to-underscore normalization correctly covers hyphenated sensitive headers and preserves existing sensitive-key behavior. No actionable regressions were found in the changed code.
