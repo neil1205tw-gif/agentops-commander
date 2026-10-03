@@ -2,10 +2,12 @@ import asyncio
 from typing import Any, cast
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncEngine
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 import app.db
 from app.db import check_database, create_engine
+from app.main import create_app
 from tests.helpers import make_settings
 
 
@@ -66,3 +68,10 @@ async def test_check_database_false_when_unreachable() -> None:
         assert await check_database(engine) is False
     finally:
         await engine.dispose()
+
+
+def test_lifespan_exposes_session_factory() -> None:
+    settings = make_settings(DATABASE_URL="postgresql+psycopg://x:y@127.0.0.1:1/none")
+    with TestClient(create_app(settings)) as client:
+        factory = client.app.state.session_factory  # type: ignore[attr-defined]
+        assert isinstance(factory, async_sessionmaker)
