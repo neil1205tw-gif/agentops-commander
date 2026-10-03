@@ -47,6 +47,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 uv run pytest --cov
+cd ..
 
 # frontend
 cd frontend
@@ -55,6 +56,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run build
+cd ..
 
 # backend image
 docker build -t agentops-api ./backend
