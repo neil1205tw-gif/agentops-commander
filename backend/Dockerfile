@@ -15,6 +15,8 @@ ENV PYTHONUNBUFFERED=1 \
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
+COPY alembic.ini ./
+COPY alembic ./alembic
 COPY app ./app
 USER app
 EXPOSE 10000
