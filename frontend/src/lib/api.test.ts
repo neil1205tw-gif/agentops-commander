@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError, apiFetch, onUnauthorized } from './api'
-import { readToken, writeToken } from './tokenStore'
+import { clearToken, readToken, writeToken } from './tokenStore'
 
 const fetchStub = vi.fn<typeof fetch>()
 
@@ -92,6 +92,58 @@ describe('apiFetch', () => {
     unsubscribe()
     await expect(apiFetch('/api/v1/me')).rejects.toMatchObject({ status: 401 })
     expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('舊 token 的請求在登出並以新 token 登入後才回 401：忽略，不清除新 token、不通知', async () => {
+    writeToken('old-token')
+    const listener = vi.fn()
+    const unsubscribe = onUnauthorized(listener)
+    let resolveOld: (response: Response) => void = () => undefined
+    fetchStub.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveOld = resolve
+        }),
+    )
+
+    const pending = apiFetch('/api/v1/incidents').catch((cause: unknown) => cause)
+    expect(new Headers(fetchStub.mock.calls[0]?.[1]?.headers).get('Authorization')).toBe(
+      'Bearer old-token',
+    )
+
+    // 使用者登出後以新 token 重新登入，舊請求才回 401。
+    clearToken()
+    writeToken('new-token')
+    resolveOld(json({ detail: 'Invalid token' }, 401))
+    const error = await pending
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error).toMatchObject({ status: 401 })
+    expect(readToken()).toBe('new-token')
+    expect(listener).not.toHaveBeenCalled()
+    unsubscribe()
+  })
+
+  it('目前 token 的請求回 401：仍清除 token 並通知', async () => {
+    writeToken('current-token')
+    const listener = vi.fn()
+    const unsubscribe = onUnauthorized(listener)
+    let resolveCurrent: (response: Response) => void = () => undefined
+    fetchStub.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveCurrent = resolve
+        }),
+    )
+
+    const pending = apiFetch('/api/v1/incidents').catch((cause: unknown) => cause)
+    resolveCurrent(json({ detail: 'Invalid token' }, 401))
+    const error = await pending
+
+    expect(error).toMatchObject({ status: 401 })
+    expect(readToken()).toBeNull()
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe()
   })
 
   it('403 與 404 不會清除 token', async () => {

@@ -187,6 +187,82 @@ describe('AuthProvider', () => {
     expect(readToken()).toBeNull()
   })
 
+  it('舊 session 的請求在登出並重新登入後才回 401：不影響新的登入狀態', async () => {
+    writeToken('token-old')
+    let meCalls = 0
+    let resolveStale: (response: Response) => void = () => undefined
+    stubApi({
+      'POST /api/v1/auth/dev-login': devLogin('operator'),
+      'GET /api/v1/me': () => {
+        meCalls += 1
+        if (meCalls === 2) {
+          // 第 2 次是舊 token 送出的 call-api，先卡住，等登出再登入後才回 401。
+          return new Promise<Response>((resolve) => {
+            resolveStale = resolve
+          })
+        }
+        return jsonResponse(USERS.operator)
+      },
+    })
+    await renderProbe()
+    expect(screen.getByTestId('status')).toHaveTextContent('authenticated')
+
+    fireEvent.click(screen.getByRole('button', { name: 'call-api' }))
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: 'logout' }))
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: 'login-operator' }))
+    await settle()
+    expect(screen.getByTestId('token')).toHaveTextContent('token-operator')
+
+    resolveStale(jsonResponse({ detail: 'Invalid token' }, 401))
+    await settle()
+
+    expect(screen.getByTestId('status')).toHaveTextContent('authenticated')
+    expect(screen.getByTestId('token')).toHaveTextContent('token-operator')
+    expect(readToken()).toBe('token-operator')
+  })
+
+  describe('sessionStorage 可讀但無法寫入（配額已滿）', () => {
+    it('登入後以記憶體 token 呼叫 /me 並帶上 Bearer，登出後讀不到舊值', async () => {
+      sessionStorage.setItem('agentops.access_token', 'token-stale')
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError')
+      })
+      stubApi({
+        'POST /api/v1/auth/dev-login': devLogin('operator'),
+        'GET /api/v1/me': (request) =>
+          request.headers.get('Authorization') === 'Bearer token-operator'
+            ? jsonResponse(USERS.operator)
+            : jsonResponse({ detail: 'Invalid token' }, 401),
+      })
+      render(
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <AuthProvider>
+            <Probe />
+          </AuthProvider>
+        </QueryClientProvider>,
+      )
+      await settle()
+      // 啟動時以 storage 內的舊 token 還原，被拒絕後清除。
+      expect(screen.getByTestId('status')).toHaveTextContent('anonymous')
+
+      fireEvent.click(screen.getByRole('button', { name: 'login-operator' }))
+      await settle()
+
+      expect(screen.getByTestId('status')).toHaveTextContent('authenticated')
+      expect(readToken()).toBe('token-operator')
+      const meCalls = callsTo('GET /api/v1/me')
+      expect(meCalls[meCalls.length - 1]?.headers.get('Authorization')).toBe('Bearer token-operator')
+
+      fireEvent.click(screen.getByRole('button', { name: 'logout' }))
+      await settle()
+      expect(screen.getByTestId('status')).toHaveTextContent('anonymous')
+      expect(readToken()).toBeNull()
+      expect(sessionStorage.getItem('agentops.access_token')).toBeNull()
+    })
+  })
+
   describe('sessionStorage 不可用', () => {
     beforeEach(() => {
       const fail = () => {

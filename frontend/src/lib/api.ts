@@ -43,7 +43,8 @@ async function readDetail(response: Response): Promise<unknown> {
 
 /**
  * 呼叫後端 API：帶 Bearer token、JSON 序列化、非 2xx 轉為 ApiError。
- * 收到 401 時清除 token 並通知訂閱者（AuthProvider 會清掉登入狀態，路由保護導向 /login）。
+ * 收到 401 且該請求所用的 token 仍是目前的 token 時，清除 token 並通知訂閱者
+ * （AuthProvider 會清掉登入狀態，路由保護導向 /login）；token 已更換則只回傳錯誤給呼叫者。
  */
 export async function apiFetch<T = unknown>(
   path: string,
@@ -73,7 +74,9 @@ export async function apiFetch<T = unknown>(
 
   if (!response.ok) {
     const detail = await readDetail(response)
-    if (response.status === 401) {
+    // 只有「發出請求時用的 token」仍是目前的 token，才代表登入狀態失效；
+    // 否則是舊 session 的請求遲到，不能作廢使用者之後重新登入的新 token。
+    if (response.status === 401 && readToken() === token) {
       clearToken()
       for (const listener of [...unauthorizedListeners]) {
         listener()
