@@ -1,0 +1,6 @@
+export { AuthProvider } from './AuthProvider'
+export { useAuth } from './AuthContext'
+export { RequireAuth } from './RequireAuth'
+export { RoleBadge } from './RoleBadge'
+export { canCreateIncident } from './roles'
+export type { AuthStatus, AuthUser, Role } from './types'

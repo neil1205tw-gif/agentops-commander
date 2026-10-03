@@ -1,3 +1,5 @@
+import { Link } from 'react-router'
+
 interface Scenario {
   title: string
   service: string
@@ -37,6 +39,12 @@ export function LandingPage() {
           與歷史事件間切換。AgentOps Commander
           將這些步驟編排成可追蹤、可中斷、可人工審批的多 Agent 工作流。
         </p>
+        <Link
+          to="/incidents"
+          className="inline-block rounded border border-cyan-500/60 bg-cyan-500/10 px-5 py-2 text-sm font-medium text-cyan-100 hover:bg-cyan-500/20"
+        >
+          進入事故列表
+        </Link>
       </section>
 
       <section aria-labelledby="scenarios-heading" className="space-y-4">
