@@ -26,7 +26,7 @@
 
 | Task | 內容 | 依賴 | Spec | 狀態 |
 |---|---|---|---|---|
-| T4 | Alembic、三張核心表（profiles / incidents / incident_events）、RLS 全拒、async repositories、compose `migrate` 服務、CI Postgres service | T3 | [t4](team/specs/2026-10-03-t4-db-schema.md) | spec |
+| T4 | Alembic、三張核心表（profiles / incidents / incident_events）、RLS 全拒、async repositories、compose `migrate` 服務、CI Postgres service | T3 | [t4](team/specs/2026-10-03-t4-db-schema.md) | done（review r1 無問題）|
 | T5 | Scenario registry（metadata）、JWT 驗證（Supabase JWKS + dev HS256）、RBAC、`/auth/*`、`/me`、`/scenarios`、`set_role` 腳本 | T4 | [t5](team/specs/2026-10-03-t5-auth-scenarios.md) | spec |
 | T6 | Incident CRUD API（可見性規則、軟刪除、events、visibility）| T5 | [t6](team/specs/2026-10-03-t6-incident-api.md) | spec |
 | T7 | 前端：登入（dev 按鈕）、受保護路由、incidents 清單 / 建立 / 詳情 | T6 | [t7](team/specs/2026-10-03-t7-frontend-incidents.md) | spec |
