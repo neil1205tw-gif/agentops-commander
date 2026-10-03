@@ -33,6 +33,8 @@ make check        # backend-check + frontend-check + docker-build
 make help         # 列出所有 targets
 ```
 
+`make backend-check` 與下方的 pytest 指令預設以本機 compose 的 postgres 作為 `TEST_DATABASE_URL`（測試會自行建立並刪除暫時資料庫），因此需要先執行 `docker compose up -d postgres`；可用環境變數 `TEST_DATABASE_URL` 覆寫。未設定該變數時 DB 測試會被略過，整體覆蓋率會低於門檻。
+
 沒有 `make`（例如 Windows）時的等效指令：
 
 ```bash
@@ -40,13 +42,13 @@ make help         # 列出所有 targets
 docker compose up --build
 docker compose down
 
-# backend
+# backend（DB 測試需要 postgres：先執行 docker compose up -d postgres）
 cd backend
 uv sync --frozen
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy
-uv run pytest --cov
+TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgresql+psycopg://postgres:postgres@localhost:5432/postgres}" uv run pytest --cov
 cd ..
 
 # frontend
