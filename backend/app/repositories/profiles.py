@@ -30,6 +30,22 @@ class ProfileRepository:
         await self._session.flush()
         return profile
 
+    async def create_if_absent(
+        self, profile_id: uuid.UUID, email: str | None, display_name: str | None
+    ) -> Profile | None:
+        """INSERT ... ON CONFLICT DO NOTHING (role viewer), then read the row back.
+
+        Safe under concurrent first logins: whichever insert wins, every caller gets that row.
+        Returns None only when the id is still absent, i.e. another row already uses the email.
+        """
+        statement = (
+            insert(Profile)
+            .values(id=profile_id, email=email, display_name=display_name, role="viewer")
+            .on_conflict_do_nothing()
+        )
+        await self._session.execute(statement)
+        return await self._session.get(Profile, profile_id, populate_existing=True)
+
     async def upsert_demo(
         self,
         profile_id: uuid.UUID,

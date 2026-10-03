@@ -1,0 +1,17 @@
+{
+  "key": "db_pool_exhaustion",
+  "name": "Database Pool Exhaustion",
+  "description": "student-portal-api returns HTTP 500 responses while the database itself is reachable but holds an unusually high number of active connections.",
+  "default_title": "student-portal-api HTTP 500 increase",
+  "affected_services": ["student-portal-api"],
+  "alert": {
+    "summary": "student-portal-api HTTP 500 rate increasing",
+    "source": "metrics-alerting",
+    "fired_at_offset_minutes": -3,
+    "symptoms": [
+      "HTTP 500 rate increasing",
+      "application logs report connection pool exhausted",
+      "database active connections unusually high"
+    ]
+  }
+}

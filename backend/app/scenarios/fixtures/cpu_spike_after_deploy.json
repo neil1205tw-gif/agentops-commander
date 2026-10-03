@@ -1,0 +1,17 @@
+{
+  "key": "cpu_spike_after_deploy",
+  "name": "CPU Spike After Deployment",
+  "description": "A new release of checkout-api was deployed shortly before CPU usage and error rates started climbing.",
+  "default_title": "checkout-api CPU spike after deployment",
+  "affected_services": ["checkout-api"],
+  "alert": {
+    "summary": "checkout-api CPU at 95%, p95 latency and HTTP 5xx rate rising",
+    "source": "metrics-alerting",
+    "fired_at_offset_minutes": -5,
+    "symptoms": [
+      "CPU utilization at 95%",
+      "p95 latency increasing",
+      "HTTP 5xx rate increasing"
+    ]
+  }
+}

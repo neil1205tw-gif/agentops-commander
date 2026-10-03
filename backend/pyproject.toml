@@ -12,6 +12,8 @@ dependencies = [
     "sqlalchemy[asyncio]>=2",
     "psycopg[binary,pool]>=3",
     "alembic>=1.20.0",
+    "pyjwt[crypto]>=2.15.1",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]
@@ -39,11 +41,11 @@ known-third-party = ["alembic"]
 extend-immutable-calls = ["fastapi.Depends"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
+"tests/**" = ["S101", "S105"]
 
 [tool.mypy]
 strict = true
-files = ["app", "tests", "alembic"]
+files = ["app", "tests", "alembic", "scripts"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -51,6 +53,7 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["app"]
+concurrency = ["thread", "greenlet"]
 
 [tool.coverage.report]
 fail_under = 80

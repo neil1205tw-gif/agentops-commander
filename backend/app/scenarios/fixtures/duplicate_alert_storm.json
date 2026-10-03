@@ -1,0 +1,17 @@
+{
+  "key": "duplicate_alert_storm",
+  "name": "Duplicate Alert Storm",
+  "description": "notification-worker keeps creating duplicate incidents for the same underlying alert.",
+  "default_title": "notification-worker duplicate incident creation",
+  "affected_services": ["notification-worker"],
+  "alert": {
+    "summary": "notification-worker is creating duplicate incidents",
+    "source": "incident-intake",
+    "fired_at_offset_minutes": -10,
+    "symptoms": [
+      "duplicate incidents created for the same alert",
+      "cooldown key not written to Redis",
+      "multiple worker instances racing on the same alert"
+    ]
+  }
+}

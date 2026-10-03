@@ -5,10 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
-from app.api.router import api_router
+from app.api.router import create_api_router
+from app.auth import TokenVerifier
 from app.config import Settings, get_settings
 from app.db import create_engine, create_session_factory
 from app.logging import configure_logging
+from app.scenarios import load_registry
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -27,6 +29,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="AgentOps Commander API", lifespan=lifespan)
     app.state.settings = settings
+    app.state.token_verifier = TokenVerifier(settings)
+    # Fixtures are validated here, so an invalid fixture stops the app from starting.
+    app.state.scenario_registry = load_registry()
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -35,7 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(health.router)
-    app.include_router(api_router)
+    app.include_router(create_api_router(settings))
     return app
 
 
