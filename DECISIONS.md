@@ -77,3 +77,51 @@
   - 正式網域為 `gameteacafe.com`（與 SPEC §3.5 一致）。
   - GitHub repo：`neil1205tw-gif/agentops-commander`（public）。
   - Commit email 使用 GitHub noreply（`295154177+neil1205tw-gif@users.noreply.github.com`），不公開個人 email；設定於本 repo 的 local git config。
+
+## D-013 Phase 1 只建三張資料表（2026-10-03）
+
+- **決策**：Phase 1 的 Alembic migration 只建立 `profiles`、`incidents`、`incident_events`。其餘 SPEC §11.1 的資料表，在用到它們的 Phase 才各自加入 migration。
+- **理由**：一次建 12 張表，其中多數在好幾個 Phase 內都是空的，等同 placeholder。
+- **同時**：Phase 1 拆為 T4（資料庫）、T5（身分與情境）、T6（Incident API）、T7（前端），後續任務編號順延（見 PLAN.md）。
+
+## D-014 以 text + CHECK 取代 PostgreSQL enum；profiles.email 可為 null（2026-10-03）
+
+- **決策**：role、status、severity 等列舉欄位使用 `text` + CHECK constraint。`profiles.email` 允許 null（部分 JWT 不帶 email），非 null 時以 `lower(email)` 唯一。
+- **理由**：PostgreSQL enum 在 Alembic 中新增值需要額外處理，不利後續 Phase 迭代。
+
+## D-015 Incident 可見性規則（2026-10-03）
+
+- **決策**：
+  - viewer 只能讀取 `is_public` 的 incident；operator 讀取自己的加上公開的；admin 讀取全部；已軟刪除的對所有人不可見。
+  - 對不存在與無權限的 incident 一律回 404，不以 403 洩漏存在性。
+  - `is_public` 預設 false，只有 admin 可修改。公開範例等 Phase 3 能完整執行 Agent 流程後，以完整流程產生再公開，Phase 1 不預先塞入資料；Viewer 在 Phase 1 看到空清單屬預期。
+- **理由**：落實 SPEC §2.5、§11.3，並因 RLS 預設全拒（D-005）而由後端強制。
+
+## D-016 Scenario fixtures 在 Phase 1 只含 metadata（2026-10-03）
+
+- **決策**：情境 JSON 只有 key、名稱、描述、預設 title、服務、告警摘要與症狀。metrics / logs / deployments 在 Phase 2 實作工具時與工具 schema 一併設計。
+- **理由**：避免工具資料格式改兩次。
+
+## D-017 身分與角色的實作細節（2026-10-03）
+
+- **決策**：
+  - 角色只以資料庫 `profiles.role` 為準，不讀 JWT 內任何 role claim。
+  - 首次帶有效 JWT 呼叫 API 的使用者自動建立 profile，預設角色 viewer；升級用 `scripts/set_role.py`。
+  - 本機登入為 `POST /api/v1/auth/dev-login`（僅 development / test 註冊路由），由前端以三顆按鈕觸發；它會以固定 UUID upsert 三個 demo profile，因此不另做 seed script。
+  - Supabase 路徑只接受非對稱簽章（RS256 / ES256）；dev 路徑只接受 HS256 且 issuer 為 `agentops-dev`；兩條路徑不互通（防 algorithm confusion）。
+  - JWKS 驗證以測試內產生的金鑰對測試，不依賴線上的 Supabase 專案（Phase 6 才串接）。
+  - Production 啟動必須有 `SUPABASE_URL` 與 `JWT_ISSUER`，且完全不接受 dev token。
+  - dev JWT 預設有效 8 小時；`DEV_AUTH_SECRET` 在 development / test 有內建預設，不用於 production。
+
+## D-018 Migration 執行方式（2026-10-03）
+
+- **決策**：本機 compose 新增一次性 `migrate` 服務（`alembic upgrade head`），backend 等它成功結束才啟動。正式環境照 SPEC 用手動的 `make migrate-prod`（Phase 7 實作），app 啟動時不自動 migration。
+- DB 測試使用 `TEST_DATABASE_URL`，每次建立隨機名稱的暫時資料庫並執行 migration；本機未設定時 skip，CI（`CI=true`）未設定則視為失敗。CI 的 backend job 以 Postgres service container 執行。
+
+## D-019 Incident 行為細節（2026-10-03）
+
+- **決策**：
+  - incident 建立時 `status=open`、`severity=null`（由 Phase 3 triage 填入）。
+  - 刪除為軟刪除（`deleted_at`），相關 `incident_events` 保留；`incident_events` 以 DB trigger 禁止 UPDATE / DELETE（append-only）。
+  - 每個寫入操作與其事件在同一交易內完成。
+  - 建立 incident 的 `title` 省略時使用情境的 `default_title`。

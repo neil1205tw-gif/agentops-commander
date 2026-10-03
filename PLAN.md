@@ -24,9 +24,12 @@
 
 驗收：登入 dev 帳號後建立 incident，可在 UI 清單與詳情頁查看；Viewer 無法建立。
 
-| Task | 內容 | 依賴 | 狀態 |
-|---|---|---|---|
-| T4 | Alembic 核心 tables/enums（含 RLS 全拒）、repositories、三個 scenario fixtures + mock service registry、JWT 驗證（Supabase JWKS + dev HS256）、RBAC/ownership、Incident CRUD API、前端登入與 incidents 清單/建立/詳情 | Phase 0 | todo |
+| Task | 內容 | 依賴 | Spec | 狀態 |
+|---|---|---|---|---|
+| T4 | Alembic、三張核心表（profiles / incidents / incident_events）、RLS 全拒、async repositories、compose `migrate` 服務、CI Postgres service | T3 | [t4](team/specs/2026-10-03-t4-db-schema.md) | spec |
+| T5 | Scenario registry（metadata）、JWT 驗證（Supabase JWKS + dev HS256）、RBAC、`/auth/*`、`/me`、`/scenarios`、`set_role` 腳本 | T4 | [t5](team/specs/2026-10-03-t5-auth-scenarios.md) | spec |
+| T6 | Incident CRUD API（可見性規則、軟刪除、events、visibility）| T5 | [t6](team/specs/2026-10-03-t6-incident-api.md) | spec |
+| T7 | 前端：登入（dev 按鈕）、受保護路由、incidents 清單 / 建立 / 詳情 | T6 | [t7](team/specs/2026-10-03-t7-frontend-incidents.md) | spec |
 
 ## Phase 2：工具與 Timeline
 
@@ -34,8 +37,8 @@
 
 | Task | 內容 | 依賴 | 狀態 |
 |---|---|---|---|
-| T5 | 全部工具（read-only / low / high）、Pydantic I/O、risk level、allowlist、`tool_executions` audit、idempotency | T4 | todo |
-| T6 | incident events API、前端 Timeline 與 Evidence Panel | T5 | todo |
+| T8 | 全部工具（read-only / low / high，含 scenario 的 metrics / logs / deployments 資料）、Pydantic I/O、risk level、allowlist、`tool_executions` audit、idempotency | T7 | todo |
+| T9 | Timeline 與 Evidence Panel UI | T8 | todo |
 
 ## Phase 3：LangGraph
 
@@ -43,7 +46,7 @@
 
 | Task | 內容 | 依賴 | 狀態 |
 |---|---|---|---|
-| T7 | `IncidentAgentState`、graph、各 node、routing 規則、bounded retries / step limit、`LLMProvider`（Gemini、Anthropic、Fake）、run API | T5 | todo |
+| T10 | `IncidentAgentState`、graph、各 node、routing 規則、bounded retries / step limit、`LLMProvider`（Gemini、Anthropic、Fake）、run API | T8 | todo |
 
 ## Phase 4：RAG 與記憶
 
@@ -51,8 +54,8 @@
 
 | Task | 內容 | 依賴 | 狀態 |
 |---|---|---|---|
-| T8 | pgvector、≥6 份 Runbook、chunking、ingestion、retrieval（filter + vector）、citation、最低分數門檻、長期記憶（相似 incident） | T7 | todo |
-| T9a | `AsyncPostgresSaver` checkpointer、setup 流程、thread 恢復 | T7 | todo |
+| T11 | pgvector、≥6 份 Runbook、chunking、ingestion、retrieval（filter + vector）、citation、最低分數門檻、長期記憶（相似 incident） | T10 | todo |
+| T12 | `AsyncPostgresSaver` checkpointer、setup 流程、thread 恢復 | T10 | todo |
 
 ## Phase 5：HITL
 
@@ -60,8 +63,8 @@
 
 | Task | 內容 | 依賴 | 狀態 |
 |---|---|---|---|
-| T9b | deterministic risk policy、`interrupt()` / `Command(resume=...)`、approval API（approve/reject/edit）、Approval Card UI、`/approvals` 頁 | T9a | todo |
-| T10 | SSE 串流（event types、heartbeat、Last-Event-ID 補回）、前端即時 Timeline 與斷線重連 | T9b | todo |
+| T13 | deterministic risk policy、`interrupt()` / `Command(resume=...)`、approval API（approve/reject/edit）、Approval Card UI、`/approvals` 頁 | T12 | todo |
+| T14 | SSE 串流（event types、heartbeat、Last-Event-ID 補回）、前端即時 Timeline 與斷線重連 | T13 | todo |
 
 ## Phase 6：Auth、安全與評測
 
@@ -69,7 +72,7 @@
 
 | Task | 內容 | 依賴 | 狀態 |
 |---|---|---|---|
-| T11 | Supabase Auth 前端串接、RLS policy tests、rate limit、prompt injection 防護測試、15 個 evaluation cases、`/evaluations` 頁 | T10 | todo |
+| T15 | Supabase Auth 前端串接、RLS policy tests、rate limit、prompt injection 防護測試、15 個 evaluation cases、`/evaluations` 頁 | T14 | todo |
 
 ## Phase 7：部署與文件包裝
 
@@ -77,7 +80,7 @@
 
 | Task | 內容 | 依賴 | 狀態 |
 |---|---|---|---|
-| T12 | `render.yaml`、`wrangler.jsonc`、deploy-frontend workflow、`make migrate-prod`、smoke test、README / docs / demo script | T11 | todo |
+| T16 | `render.yaml`、`wrangler.jsonc`、deploy-frontend workflow、`make migrate-prod`、smoke test、README / docs / demo script | T15 | todo |
 
 外部前置（老闆手動）：Render 帳號、Supabase project、Cloudflare Worker custom domain 與 DNS、各平台 secrets。
 
