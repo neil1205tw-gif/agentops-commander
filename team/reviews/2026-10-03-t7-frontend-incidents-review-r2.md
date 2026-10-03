@@ -1,0 +1,1 @@
+The changes correctly prevent a delayed 401 for a replaced token from clearing the current session, and the token-store fallback preserves the in-memory token when sessionStorage writes fail.
