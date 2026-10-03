@@ -61,3 +61,85 @@ def test_get_settings_is_cached(monkeypatch: pytest.MonkeyPatch) -> None:
         assert get_settings() is get_settings()
     finally:
         get_settings.cache_clear()
+
+
+def _clean_auth_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", DB_URL)
+    for key in (
+        "APP_ENV",
+        "SUPABASE_URL",
+        "JWT_ISSUER",
+        "JWT_AUDIENCE",
+        "DEV_AUTH_SECRET",
+        "DEV_JWT_TTL_SECONDS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
+@pytest.mark.parametrize("app_env", ["development", "test"])
+def test_dev_auth_defaults_outside_production(
+    monkeypatch: pytest.MonkeyPatch, app_env: str
+) -> None:
+    _clean_auth_env(monkeypatch)
+    monkeypatch.setenv("APP_ENV", app_env)
+    settings = _settings()
+    assert settings.dev_auth_enabled is True
+    assert len(settings.DEV_AUTH_SECRET.get_secret_value()) >= 32
+    assert settings.JWT_AUDIENCE == "authenticated"
+    assert settings.DEV_JWT_TTL_SECONDS == 28800
+    assert settings.SUPABASE_URL == ""
+
+
+def test_blank_dev_auth_secret_falls_back_to_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_auth_env(monkeypatch)
+    monkeypatch.setenv("DEV_AUTH_SECRET", "")
+    assert len(_settings().DEV_AUTH_SECRET.get_secret_value()) >= 32
+
+
+def test_explicit_dev_auth_secret_is_kept(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_auth_env(monkeypatch)
+    monkeypatch.setenv("DEV_AUTH_SECRET", "my-own-secret-" + "x" * 30)
+    assert _settings().DEV_AUTH_SECRET.get_secret_value() == "my-own-secret-" + "x" * 30
+
+
+def test_production_requires_supabase_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_auth_env(monkeypatch)
+    monkeypatch.setenv("APP_ENV", "production")
+    with pytest.raises(ValidationError) as missing_both:
+        _settings()
+    assert "SUPABASE_URL is required" in str(missing_both.value)
+    monkeypatch.setenv("SUPABASE_URL", "https://p.example.test")
+    with pytest.raises(ValidationError) as missing_issuer:
+        _settings()
+    assert "JWT_ISSUER is required" in str(missing_issuer.value)
+    monkeypatch.setenv("JWT_ISSUER", "   ")
+    with pytest.raises(ValidationError):
+        _settings()
+    assert "s3cret" not in str(missing_issuer.value)
+
+
+def test_production_disables_dev_auth_and_ignores_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_auth_env(monkeypatch)
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("SUPABASE_URL", "https://p.example.test/")
+    monkeypatch.setenv("JWT_ISSUER", "https://p.example.test/auth/v1")
+    monkeypatch.setenv("DEV_AUTH_SECRET", "should-not-be-used-" + "x" * 20)
+    settings = _settings()
+    assert settings.dev_auth_enabled is False
+    assert settings.DEV_AUTH_SECRET.get_secret_value() == ""
+    assert settings.SUPABASE_URL == "https://p.example.test"
+
+
+def test_dev_auth_secret_does_not_leak_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_auth_env(monkeypatch)
+    secret = _settings().DEV_AUTH_SECRET.get_secret_value()
+    assert secret not in repr(_settings())
+
+
+def test_validation_errors_do_not_echo_input_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_auth_env(monkeypatch)
+    monkeypatch.setenv("APP_ENV", "production")
+    with pytest.raises(ValidationError) as excinfo:
+        _settings()
+    assert "s3cret" not in str(excinfo.value)
+    assert "input_value" not in str(excinfo.value)

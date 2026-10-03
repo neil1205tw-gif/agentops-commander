@@ -127,7 +127,13 @@ def test_connection_string_without_credentials_is_unchanged() -> None:
 def test_configure_logging_production_emits_redacted_json(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    configure_logging(make_settings(APP_ENV="production", DATABASE_URL=DSN))
+    settings = make_settings(
+        APP_ENV="production",
+        DATABASE_URL=DSN,
+        SUPABASE_URL="https://project.example.test",
+        JWT_ISSUER="https://project.example.test/auth/v1",
+    )
+    configure_logging(settings)
     structlog.get_logger().info(
         "boot",
         password="hunter2",  # noqa: S106
