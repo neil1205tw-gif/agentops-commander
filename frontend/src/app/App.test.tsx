@@ -49,6 +49,11 @@ describe('Landing', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 
+  it('提供進入事故列表的連結', async () => {
+    await renderAt('/')
+    expect(screen.getByRole('link', { name: '進入事故列表' })).toHaveAttribute('href', '/incidents')
+  })
+
   it('layout 顯示後端狀態 banner', async () => {
     await renderAt('/')
     expect(screen.getByText('已就緒')).toBeInTheDocument()
