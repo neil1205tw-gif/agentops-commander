@@ -1,4 +1,4 @@
-.PHONY: help up down backend-check frontend-check docker-build check fmt
+.PHONY: help up down migrate backend-check frontend-check docker-build check fmt
 
 .DEFAULT_GOAL := help
 
@@ -10,6 +10,9 @@ up: ## 啟動 docker compose（含 build）
 
 down: ## 停止 docker compose
 	docker compose down
+
+migrate: ## 對本機 compose 的資料庫執行 alembic upgrade head
+	docker compose run --rm migrate
 
 backend-check: ## backend：ruff、mypy、pytest --cov
 	cd backend && uv run ruff check .
