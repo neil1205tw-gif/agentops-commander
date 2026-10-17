@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /usr/local/bin/uv
 ENV UV_PYTHON_DOWNLOADS=0 \
     UV_LINK_MODE=copy
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
